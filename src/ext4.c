@@ -1616,7 +1616,7 @@ static int ext4_ftruncate_no_lock(ext4_file *file, uint64_t size)
 	/*Sync file size*/
 	file->fsize = ext4_inode_get_size(&file->mp->fs.sb, ref.inode);
 	if (file->fsize <= size) {
-		r = EOK;
+		r = ENOTSUP;
 		goto Finish;
 	}
 
@@ -1659,11 +1659,13 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 	EXT4_MP_LOCK(f->mp);
 
 	ext4_trans_start(f->mp);
+
 	r = ext4_ftruncate_no_lock(f, size);
-	if (r != EOK)
-		ext4_trans_abort(f->mp);
-	else
+
+        if( r == EOK || r == ENOTSUP )
 		ext4_trans_stop(f->mp);
+        else
+		ext4_trans_abort(f->mp);
 
 	EXT4_MP_UNLOCK(f->mp);
 	return r;
@@ -3146,8 +3148,10 @@ int ext4_dir_mk(const char *path)
 
 	/*Check if exist.*/
 	r = ext4_generic_open(&f, path, "r", false, 0, 0);
-	if (r == EOK)
-		goto Finish;
+	if (r == EOK) {
+		r = EEXIST;
+                goto Finish;
+        }
 
 	/*Create new directory.*/
 	r = ext4_generic_open(&f, path, "w", false, 0, 0);
