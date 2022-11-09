@@ -65,9 +65,28 @@ struct ext4_mkfs_info {
 	uint16_t dsc_size;
 	uint8_t uuid[UUID_SIZE];
 	bool journal;
-	const char *label;
+	char label[16];
 };
 
+struct fs_aux_info {
+    struct ext4_sblock *sb;
+    uint8_t *bg_desc_blk;
+    struct xattr_list_element *xattrs;
+    uint32_t first_data_block;
+    uint64_t len_blocks;
+    uint32_t inode_table_blocks;
+    uint32_t groups;
+    uint32_t bg_desc_blocks;
+    uint32_t default_i_flags;
+    uint32_t blocks_per_ind;
+    uint32_t blocks_per_dind;
+    uint32_t blocks_per_tind;
+};
+
+int create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info);
+void release_fs_aux_info(struct fs_aux_info *aux_info);
+
+int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info, struct ext4_mkfs_info *info);
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info);
 

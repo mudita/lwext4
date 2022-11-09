@@ -53,20 +53,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-struct fs_aux_info {
-	struct ext4_sblock *sb;
-	uint8_t *bg_desc_blk;
-	struct xattr_list_element *xattrs;
-	uint32_t first_data_block;
-	uint64_t len_blocks;
-	uint32_t inode_table_blocks;
-	uint32_t groups;
-	uint32_t bg_desc_blocks;
-	uint32_t default_i_flags;
-	uint32_t blocks_per_ind;
-	uint32_t blocks_per_dind;
-	uint32_t blocks_per_tind;
-};
 
 static inline int log_2(int j)
 {
@@ -92,7 +78,7 @@ static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 	info->feat_compat = to_le32(sb->features_compatible);
 	info->feat_incompat = to_le32(sb->features_incompatible);
 	info->bg_desc_reserve_blocks = to_le16(sb->s_reserved_gdt_blocks);
-	info->label = sb->volume_name;
+	strncpy(info->label,sb->volume_name,sizeof(info->label));
 	info->len = (uint64_t)info->block_size * ext4_sb_get_blocks_cnt(sb);
 	info->dsc_size = to_le16(sb->desc_size);
 	memcpy(info->uuid, sb->uuid, UUID_SIZE);
@@ -145,7 +131,7 @@ static bool has_superblock(struct ext4_mkfs_info *info, uint32_t bgid)
 	return ext4_sb_sparse(bgid);
 }
 
-static int create_fs_aux_info(struct fs_aux_info *aux_info,
+int create_fs_aux_info(struct fs_aux_info *aux_info,
 			      struct ext4_mkfs_info *info)
 {
 	aux_info->first_data_block = (info->block_size > 1024) ? 0 : 1;
@@ -211,7 +197,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 	return EOK;
 }
 
-static void release_fs_aux_info(struct fs_aux_info *aux_info)
+void release_fs_aux_info(struct fs_aux_info *aux_info)
 {
 	if (aux_info->sb)
 		ext4_free(aux_info->sb);
@@ -434,7 +420,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 	return r;
 }
 
-static int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
+int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			  struct ext4_mkfs_info *info)
 {
 	uint64_t offset;
@@ -457,7 +443,7 @@ static int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 	/* write out the primary superblock */
 	aux_info->sb->block_group_index = to_le16(0);
-	return ext4_block_writebytes(bd, 1024, aux_info->sb,
+	return ext4_block_writebytes(bd, EXT4_SUPERBLOCK_OFFSET, aux_info->sb,
 			EXT4_SUPERBLOCK_SIZE);
 }
 
@@ -729,9 +715,6 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	if (info->inode_size == 0)
 		info->inode_size = 256;
-
-	if (info->label == NULL)
-		info->label = "";
 
 	info->inodes_per_group = compute_inodes_per_group(info);
 

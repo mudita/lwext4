@@ -227,6 +227,9 @@ uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group);
 uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
 				     uint32_t block_group);
 
+/**@brief   TODO:*/
+void ext4_sb_set_csum(struct ext4_sblock *s);
+
 #ifdef __cplusplus
 }
 #endif

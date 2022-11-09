@@ -107,7 +107,7 @@ static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 	return s->checksum == to_le32(ext4_sb_csum(s));
 }
 
-static void ext4_sb_set_csum(struct ext4_sblock *s)
+void ext4_sb_set_csum(struct ext4_sblock *s)
 {
 	if (!ext4_sb_feature_ro_com(s, EXT4_FRO_COM_METADATA_CSUM))
 		return;
