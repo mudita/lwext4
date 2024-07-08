@@ -142,9 +142,9 @@ int ext4_device_unregister(const char *dev_name)
 
 	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
 		if (strcmp(s_bdevices[i].name, dev_name) == 0) {
-            memset(&s_bdevices[i], 0, sizeof(s_bdevices[i]));
-            return EOK;
-        }
+			    memset(&s_bdevices[i], 0, sizeof(s_bdevices[i]));
+			    return EOK;
+        	}
 	}
 
 	return ENOENT;
@@ -391,7 +391,6 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	for (size_t i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
 		if (!s_mp[i].mounted) {
 			strcpy(s_mp[i].name, mount_point);
-			s_mp[i].mounted = 1;
 			mp = &s_mp[i];
 			break;
 		}
@@ -436,6 +435,7 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	}
 
 	bd->fs = &mp->fs;
+	mp->mounted = 1;
 	return r;
 }
 
@@ -587,7 +587,7 @@ static int __ext4_recover(const char *mount_point)
 		struct ext4_block_group_ref bg_ref;
 
 		/* Update superblock's stats */
-		for (bgid = 0;bgid < ext4_block_group_cnt(&mp->fs.sb);bgid++) {
+		for (bgid = 0; bgid < ext4_block_group_cnt(&mp->fs.sb); bgid++) {
 			r = ext4_fs_get_block_group_ref(&mp->fs, bgid, &bg_ref);
 			if (r != EOK)
 				goto Finish;
@@ -1850,7 +1850,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 	if (file->mp->fs.read_only)
 		return EROFS;
 
-	if (file->flags & O_RDONLY)
+	if (!(file->flags & O_WRONLY) && !(file->flags & O_RDWR))
 		return EPERM;
 
 	if (!size)
